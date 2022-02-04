@@ -23,4 +23,4 @@ if(longCondition)
 // Sell Order - For now it is basic.
 if (strategy.position_size > 0)
     //lossPrice=math.min(strategy.position_avg_price-strategy.position_avg_price*0.1,close?close<emaSlower:1000)
-    strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.1, loss=strategy.position_avg_price-strategy.position_avg_price*0.05)
+    strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.5, loss=strategy.position_avg_price-strategy.position_avg_price*0.2)
