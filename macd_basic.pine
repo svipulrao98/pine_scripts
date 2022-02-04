@@ -1,0 +1,24 @@
+// 1 Init
+//@version=4
+
+strategy("MACD first", overlay=false, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0)
+
+//2 Param Set
+[macdline, signalline, macdhlist] = macd(close, 12, 26, 9) 
+
+//3 Plot
+// MACD Histogram
+plot(macdhlist, style=plot.style_columns, color=macdhlist>=0?color.green:color.red)
+//Macd Line
+plot(macdline, color=color.blue)
+//Signal line
+plot(signalline, color=color.orange)
+
+longCondition = crossover(macdline, signalline)
+
+if(longCondition)
+    strategy.entry("Long", strategy.long, 1, stop=strategy.position_avg_price-strategy.position_avg_price*0.05)
+
+if (strategy.position_size > 0)
+    //lossPrice=math.min(strategy.position_avg_price-strategy.position_avg_price*0.1,close?close<emaSlower:1000)
+    strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.1, loss=strategy.position_avg_price-strategy.position_avg_price*0.05)

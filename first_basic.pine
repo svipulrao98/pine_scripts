@@ -1,0 +1,19 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © svipulrao98
+
+//@version=5
+strategy("EMA Crossover", overlay = true)
+
+emaFaster = ta.ema(close,20)
+emaSlower = ta.ema(close,50)
+plot(emaFaster, color = color.blue)
+plot(emaSlower, color = color.green)
+
+longCondition = ta.crossover(emaFaster, emaSlower)
+
+if(longCondition)
+    strategy.entry("Long", strategy.long, 1, stop=strategy.position_avg_price-strategy.position_avg_price*0.05)
+
+if (strategy.position_size > 0)
+    //lossPrice=math.min(strategy.position_avg_price-strategy.position_avg_price*0.1,close?close<emaSlower:1000)
+    strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.1, loss=strategy.position_avg_price-strategy.position_avg_price*0.05)
