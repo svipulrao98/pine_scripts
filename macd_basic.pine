@@ -16,9 +16,11 @@ plot(signalline, color=color.orange)
 
 longCondition = crossover(macdline, signalline)
 
+// Buy Order
 if(longCondition)
     strategy.entry("Long", strategy.long, 1, stop=strategy.position_avg_price-strategy.position_avg_price*0.05)
 
+// Sell Order - For now it is basic.
 if (strategy.position_size > 0)
     //lossPrice=math.min(strategy.position_avg_price-strategy.position_avg_price*0.1,close?close<emaSlower:1000)
     strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.1, loss=strategy.position_avg_price-strategy.position_avg_price*0.05)
