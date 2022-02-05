@@ -27,7 +27,7 @@ buy = ta.crossover(close, supertrend) and EMA1 > EMA2
 if(buy)
     strategy.entry("Long", strategy.long, 1, stop=strategy.position_avg_price-strategy.position_avg_price*0.05)
 
-// Sell Conditions
+// Sell Condition
 sell = ta.crossunder(close, supertrend) and EMA1 < EMA2
 if(sell)
     strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.5, loss=strategy.position_avg_price-strategy.position_avg_price*0.2)
