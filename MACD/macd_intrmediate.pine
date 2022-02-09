@@ -1,0 +1,45 @@
+// 1 Init
+//@version=4
+
+strategy("MACD first", overlay=false, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0)
+
+//2 Param Set
+[macdline, signalline, macdhlist] = macd(close, 12, 26, 9) 
+[macdlineD, signallineD, macdhlistD] = security(syminfo.tickerid, "D", [macdline, signalline, macdhlist])
+[macdlineH, signallineH, macdhlistH] = security(syminfo.tickerid, "60", [macdline, signalline, macdhlist])
+
+var hourly_plt_color = (signallineH>=macdlineH)?color.green:color.red
+
+entryConditionD = signallineD >= macdlineD
+entryConditionH = crossover(signallineH, macdlineH)
+if(entryConditionH)
+    hourly_plt_color := color.green
+
+exitConditionH = crossover(macdlineH, signallineH)
+if(exitConditionH)
+    hourly_plt_color := color.red
+
+//3 Plot
+// MACD Histogram
+plot(macdhlist, style=plot.style_columns, color=macdhlist>=0?color.green:color.red)
+
+//Macd Line daily
+plot(macdlineD, color=color.blue)
+//Signal line
+plot(signallineD, color=entryConditionD?color.green:color.red)
+
+//Macd Line hourly
+plot(macdlineH, color=color.blue, linewidth=2)
+//Signal line
+plot(signallineH, color=hourly_plt_color, linewidth=2)
+// plotshape(entryConditionH, title= "Case1", location=location.belowbar, color=color.green, style=shape.triangleup, text="BUY-1")
+
+// Buy Order
+if(entryConditionD)
+    if(entryConditionH)
+        strategy.entry("Long", strategy.long, 1, stop=strategy.position_avg_price-strategy.position_avg_price*0.02)
+    
+// Sell Order - For now it is basic.ac
+if (strategy.position_size > 0)
+    //lossPrice=math.min(strategy.position_avg_price-strategy.position_avg_price*0.1,close?close<emaSlower:1000)
+    strategy.exit("Long", profit=strategy.position_avg_price+strategy.position_avg_price*0.05, loss=strategy.position_avg_price-strategy.position_avg_price*0.02)
