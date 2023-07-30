@@ -1,0 +1,25 @@
+//@version=5
+indicator("Time input", "T", true)
+
+var float price_1 = na
+var float price_2 = na
+
+
+timeAndDateInput_1 = input.time(timestamp("28 Jul 2023 00:00 +0300"), "Date and time", confirm = true)
+timeAndDateInput_2 = input.time(timestamp("28 Jul 2023 00:00 +0300"), "Date and time", confirm = true)
+
+time_bar_1 = time == timeAndDateInput_1
+price_1 := time_bar_1 ? open : price_1
+
+time_bar_2 = time == timeAndDateInput_2
+price_2 := time_bar_2 ? open : price_2
+
+// Plot the open price for the selected time
+avg_price = (price_1 + price_2)/2
+// plot(avg_price, "High", color.green, 2, plot.style_line)
+
+avg_ts = ((timeAndDateInput_1 + timeAndDateInput_2)/2) - timeAndDateInput_1
+for i = 1 to 5 by 1
+    mid_ts = timeAndDateInput_2 + avg_ts * i
+    // line.new(x1=mid_ts, y1=avg_price-10,x2=mid_ts, y2=avg_price+10, xloc = xloc.bar_time, color = color.green, width = 2)
+    label.new(mid_ts, avg_price, xloc=xloc.bar_time, style = label.style_xcross, size = size.tiny, color = color.green)
