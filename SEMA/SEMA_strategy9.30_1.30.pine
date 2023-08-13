@@ -1,0 +1,202 @@
+//@version=5
+// version=83.0 has the working strategy -- altough this is fixed now.
+strategy("SEMA Crossover Strategy with Trailing Stop", shorttitle="SEMA Strategy", overlay=true)
+
+// Calculate SEMA
+////Trading View In-Built code
+len = input(7, title="SEMA Length")
+smma = 0.0
+smma := na(smma[1]) ? ta.ema(close, len) : (smma[1] * (len - 1) + close) / len
+
+// Session Choice
+// morning - 9:30 AM to 10:00 AM
+// evening - 1:30 PM to 2:30 PM
+var int start_hour = na
+var int end_hour = na
+var int start_minute = na
+var int end_minute = na
+session_choice = input.string("morning", title="Session", options=["morning", "evening"])
+if (session_choice == "morning")
+    start_hour := 9
+    end_hour := 10
+    start_minute := 30
+    end_minute := 0
+else if (session_choice == "evening")
+    start_hour := 13
+    end_hour := 14
+    start_minute := 30
+    end_minute := 30
+
+// Risk:Reward
+risk_reward = input.string("1:1.5", title="R:R", options=["1:1", "1:1.5"])
+
+// Mode - indicator / debug
+indicator_mode = input.string("Indicator", title="Mode", options=["Indicator", "Debug"])
+
+is_valid_time = time >= timestamp(year, month, dayofmonth, start_hour, start_minute) and time <= timestamp(year, month, dayofmonth, end_hour, end_minute)
+
+// Determine long and short signals
+long_condition = close > smma and close[1] <= smma[1] and is_valid_time
+short_condition = close < smma and close[1] >= smma[1] and is_valid_time
+
+// Define initial position size
+position_size = 210 // You can adjust this percentage
+
+// Initialize target and stop levels
+var float target1 = na
+var float target2 = na
+var float stop_level = na
+var float entry_level = na
+
+// Flag to track if a position is active
+var bool position_taken = na
+var bool position_long = na
+var bool position_short = na
+
+
+// Execute long trade
+if (long_condition and not position_taken)
+    if (indicator_mode == "Debug")
+        strategy.entry("Long", strategy.long, qty=position_size)
+    else
+        label.new(x = bar_index, y = low, size = size.tiny, color = color.green, style=label.style_triangleup, textalign=text.align_left)
+
+    // Calculate target and stop levels
+    target1 := close + (close - low)
+    target2 := close + 2 * (close - low)
+    stop_level := low
+    entry_level := close
+
+    // Set position_taken flag to true
+    position_taken := true
+    position_long := true
+
+    // Mark TGT & SL
+    label.new(x = bar_index, y = target1, text = "TP: " + str.tostring(value = target1), size = size.small, style = label.style_cross, color = color.green, textalign = text.align_left)
+    label.new(x = bar_index, y = stop_level, text = "SL: " + str.tostring(value = stop_level), size = size.small, style = label.style_cross, color = color.red, textalign = text.align_left)
+    if (risk_reward == "1:1.5")
+        label.new(x = bar_index, y = target2, text = "TP2: " + str.tostring(value = target2), size = size.small, style = label.style_cross, color = color.green, textalign = text.align_left)
+
+// Execute short trade
+if (short_condition and not position_taken)
+    if (indicator_mode == "Debug")
+        strategy.entry("Short", strategy.short, qty=position_size)
+    else
+        label.new(x = bar_index, y = high, size = size.tiny, style = label.style_triangledown, color = color.red)
+
+    // Calculate target and stop levels
+    target1 := close - (high - close)
+    target2 := close - 2 * (high - close)
+    stop_level := high
+    entry_level := close
+
+    // Set position_taken flag to true
+    position_taken := true
+    position_short := true
+
+    // Mark TGT & SL
+    label.new(x = bar_index, y = target1, text = "TP: " + str.tostring(value = target1), size = size.small, style = label.style_cross, color = color.green, textalign = text.align_left)
+    label.new(x = bar_index, y = stop_level, text = "SL: " + str.tostring(value = stop_level), size = size.small, style = label.style_cross, color = color.red, textalign = text.align_left)
+    if (risk_reward == "1:1.5")
+        label.new(x = bar_index, y = target2, text = "TP2: " + str.tostring(value = target2), size = size.small, style = label.style_cross, color = color.green, textalign = text.align_left)
+
+
+// Exit logic
+if (position_long)
+    if (risk_reward == "1:1")
+        if (high > target1)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target Long", from_entry="Long", profit=0)
+            else if (position_taken)
+                label.new(x = bar_index, y = high, text = "Target Long", size = size.small, style = label.style_triangledown, color = color.green)
+            position_taken := false
+            position_long := false
+        else if (low < stop_level)
+            if (indicator_mode == "Debug")
+                strategy.exit("SL Long", from_entry="Long", loss=0)
+            else if (position_taken)
+                label.new(x = bar_index, y = high, text = "SL Long", size = size.small, style = label.style_triangledown, color = color.red)
+            position_taken := false
+            position_long := false
+    else
+        if (low < stop_level)
+            if (stop_level == entry_level)
+                if (indicator_mode == "Debug")
+                    strategy.exit("Trailing SL Long", from_entry="Long", loss=0, qty=position_size/2)
+                else if (position_taken)
+                    label.new(x = bar_index, y = high, text = "Trailing SL Long", size = size.small, style = label.style_triangledown, color = color.yellow)
+            else
+                if (indicator_mode == "Debug")
+                    strategy.exit("SL Long", from_entry="Long", loss=0)
+                else if (position_taken)
+                    label.new(x = bar_index, y = high, text = "SL Long", size = size.small, style = label.style_triangledown, color = color.red)
+                position_taken := false
+                position_long := false 
+        else if (high > target2 and entry_level == stop_level)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target 2 Long", from_entry="Long", profit=0, qty=position_size/2)
+            else if (position_taken)
+                label.new(x = bar_index, y = high, text = "Target 2 Long", size = size.small, style = label.style_triangledown, color = color.green)
+            position_taken := false
+            position_long := false
+        else if (high > target1)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target 1 Long", from_entry="Long", profit=0, qty=position_size/2)
+            else if (position_taken and stop_level != entry_level)
+                label.new(x = bar_index, y = high, text = "Target 1 Long", size = size.small, style = label.style_triangledown, color = color.green)
+            stop_level := entry_level   
+            
+if (position_short)
+    if (risk_reward == "1:1")
+        if (low < target1)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target Short", from_entry="Short", profit=0)
+            else if (position_taken)
+                label.new(x = bar_index, y = low, text = "Target Short", size = size.small, color = color.green, style=label.style_triangleup)
+            position_taken := false
+            position_short := false
+        else if (high > stop_level)
+            if (indicator_mode == "Debug")
+                strategy.exit("SL Short", from_entry="Short", loss=0)
+            else if (position_taken)
+                label.new(x = bar_index, y = low, text = "SL Short", size = size.small, color = color.red, style=label.style_triangleup)
+            position_taken := false
+            position_short := false
+    else
+        if (high > stop_level)
+            if (stop_level == entry_level)
+                if (indicator_mode == "Debug")
+                    strategy.exit("Trailing SL Short", from_entry="Short", loss=0, qty=position_size/2)
+                else if (position_taken)
+                    label.new(x = bar_index, y = low, text = "Trailing SL Short", size = size.small, color = color.yellow, style=label.style_triangleup)
+            else
+                if (indicator_mode == "Debug")
+                    strategy.exit("SL Short", from_entry="Short", loss=0)
+                else if (position_taken)
+                    label.new(x = bar_index, y = low, text = "SL Short", size = size.small, color = color.green, style=label.style_triangleup)
+                position_taken := false
+                position_short := false  
+        else if (low <target2  and entry_level == stop_level)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target 2 Short", from_entry="Short", profit=0, qty=position_size/2)
+            else if (position_taken)
+                label.new(x = bar_index, y = low, text = "Target 2 Short", size = size.small, color = color.green, style=label.style_triangleup)
+            position_taken := false
+            position_short := false
+        else if (low < target1)
+            if (indicator_mode == "Debug")
+                strategy.exit("Target 1 Short", from_entry="Short", profit=0, qty=position_size/2)
+            else if (position_taken and stop_level != entry_level)
+                label.new(x = bar_index, y = low, text = "Target 1 Short", size = size.small, color = color.green, style=label.style_triangleup)
+            stop_level := entry_level  
+
+// Close all positions at 3 PM
+if (time >= timestamp(year, month, dayofmonth, 15, 0))
+    if (indicator_mode == "Debug")
+        strategy.close_all()
+    position_taken := na
+    position_long := na
+    position_short := na
+
+// Plot SEMA
+plot(indicator_mode == "Debug" ? smma: na, color=color.blue, title="SEMA")
