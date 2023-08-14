@@ -125,6 +125,8 @@ if (position_long)
                     strategy.exit("Trailing SL Long", from_entry="Long", loss=0, qty=position_size/2)
                 else if (position_taken)
                     label.new(x = bar_index, y = high, text = "Trailing SL Long", size = size.small, style = label.style_triangledown, color = color.yellow)
+                    position_taken := false
+                    position_long := false 
             else
                 if (indicator_mode == "Debug")
                     strategy.exit("SL Long", from_entry="Long", loss=0)
@@ -169,6 +171,8 @@ if (position_short)
                     strategy.exit("Trailing SL Short", from_entry="Short", loss=0, qty=position_size/2)
                 else if (position_taken)
                     label.new(x = bar_index, y = low, text = "Trailing SL Short", size = size.small, color = color.yellow, style=label.style_triangleup)
+                position_taken := false
+                position_long := false 
             else
                 if (indicator_mode == "Debug")
                     strategy.exit("SL Short", from_entry="Short", loss=0)
@@ -194,6 +198,10 @@ if (position_short)
 if (time >= timestamp(year, month, dayofmonth, 15, 0))
     if (indicator_mode == "Debug")
         strategy.close_all()
+    else if (position_long)
+        label.new(x = bar_index, y = high, text = "Time UP Long", size = size.small, style = label.style_triangledown, color = color.yellow)
+    else if (position_short)
+        label.new(x = bar_index, y = high, text = "Time UP Short", size = size.small, style = label.style_triangleup, color = color.yellow)
     position_taken := na
     position_long := na
     position_short := na
