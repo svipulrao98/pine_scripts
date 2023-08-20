@@ -1,0 +1,33 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © sincereApple21884
+
+//@version=5
+indicator("Color Region Between EMA and SMMA", overlay=true)
+
+// Define lengths for EMA and SMMA
+ema_length = input(21, title="EMA Length")
+smma_length = input(7, title="SMMA Length")
+clr_type = input.string("normal", title="Color Scheme", options=["normal", "gradient"])
+
+// Calculate EMA and SMMA
+ema_value = ta.ema(close, ema_length)
+smma_value = 0.0
+smma_value := na(smma_value[1]) ? ta.ema(close, smma_length) : (smma_value[1] * (smma_length - 1) + close) / smma_length
+
+// Determine whether EMA is above SMMA
+ema_above_smma = ema_value > smma_value
+
+// Plot EMA and SMMA
+var ema_col = plot(ema_value, color=color.black, title="EMA")
+var smma_col = plot(smma_value, color=color.black, title="SMMA")
+
+// Calculate the difference between EMA and SMMA
+diff = ema_value - smma_value
+
+// Calculate RGB color based on the difference
+color_r = ema_above_smma ? 255 : 255 - math.min(math.abs(diff) * 2, 255)
+color_g = ema_above_smma ? 255 - math.min(math.abs(diff) * 2, 255) : 255
+color_b = 0
+
+// Color region between EMA and SMMA
+fill(ema_col, smma_col, clr_type == 'gradient' ? (color.rgb(color_r, color_g, color_b)) : (diff > 0 ?  #FFB0B0 : #8FD19E))
